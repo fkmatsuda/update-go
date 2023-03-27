@@ -1,0 +1,46 @@
+#!/bin/bash
+
+GO_URL="https://go.dev"
+GO_DL_URL="$GO_URL/dl/"
+GO_FILE="go.tar.gz"
+
+TARGET_PATTERN='/dl/go[0-9]+\.[0-9]+(\.[0-9]+)?\.linux-amd64\.tar\.gz'
+
+function get_latest_version() {
+    local url=$1
+    local latest_version=$(get_latest_version_url | grep -oP $TARGET_PATTERN)
+    echo $latest_version
+}
+
+function get_latest_version_url() {
+    local url=$1
+    local latest_version_url="$GO_URL$(curl -s $GO_DL_URL | grep -oPm 1  $TARGET_PATTERN)"
+    echo $latest_version_url
+}
+
+function download_file() {
+    wget -O $GO_FILE $(get_latest_version_url)
+}
+
+case $1 in
+    "version")
+        get_latest_version
+        ;;
+    "url")
+        get_latest_version_url
+        ;;
+    "download")
+        download_file
+        ;;
+    "install")
+        if [ ! -f $GO_FILE ]; then
+            download_file
+        fi
+        sudo rm -rvf /usr/local/go/
+	sudo tar -C /usr/local -xzf $GO_FILE && rm $GO_FILE
+        ;;
+    *)
+        echo "Usage: $0 {version|url|download|install}"
+        exit 1
+        ;;
+esac
